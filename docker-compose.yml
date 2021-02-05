@@ -1,0 +1,68 @@
+version: '3.9'
+services:
+  mysql:
+    image: 'mysql:8.0'
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+      - ./mysql/config:/etc/mysql/conf.d
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: flare
+      MYSQL_DATABASE: flare
+      MYSQL_USER: flare
+      MYSQL_PASSWORD: flare
+    ports:
+      - 3307:3306
+  redis:
+    image: 'redis:latest'
+  #    expose:
+  #      - 6379
+  web:
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./web
+    depends_on:
+      - mysql
+      - redis
+    volumes:
+      - ./web/src:/var/www/html
+      #- ./web/src/vendor
+    environment:
+      - MYSQL_HOST=mysql
+      - MYSQL_ROOT_PASSWORD=flare
+      - MYSQL_USER=flare
+      - MYSQL_PASSWORD=flare
+      - MYSQL_DATABASE=flare
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    ports:
+      - 8081:8082
+  worker:
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./worker
+    depends_on:
+      - mysql
+      - redis
+    volumes:
+      - ./worker/src:/src
+      #- ./worker/src/vendor
+    environment:
+      - MYSQL_HOST=mysql
+      - MYSQL_ROOT_PASSWORD=flare
+      - MYSQL_USER=flare
+      - MYSQL_PASSWORD=flare
+      - MYSQL_DATABASE=flare
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+  phpmyadmin:
+    image: phpmyadmin:latest
+    restart: always
+    ports:
+      - 8083:80
+    env_file:
+      - ./phpmyadmin/.env
+    depends_on:
+      - mysql
+volumes:
+  db_data: {}
